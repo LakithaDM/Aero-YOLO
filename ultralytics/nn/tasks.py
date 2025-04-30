@@ -6,7 +6,8 @@ import re
 import types
 from copy import deepcopy
 from pathlib import Path
-
+from ultralytics.nn.modules.block import AircraftAttention, ESPPF, AeroSPPF
+from ultralytics.nn.modules.head import CompositeDetect
 import torch
 import torch.nn as nn
 
@@ -24,6 +25,7 @@ from ultralytics.nn.modules import (
     SPP,
     SPPELAN,
     SPPF,
+    AeroSPPF,
     A2C2f,
     AConv,
     ADown,
@@ -1372,6 +1374,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             GhostBottleneck,
             SPP,
             SPPF,
+            AeroSPPF,
             C2fPSA,
             C2PSA,
             DWConv,
@@ -1419,14 +1422,24 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             A2C2f,
         }
     )
+    
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args
-        m = (
-            getattr(torch.nn, m[3:])
-            if "nn." in m
-            else getattr(__import__("torchvision").ops, m[16:])
-            if "torchvision.ops." in m
-            else globals()[m]
-        )  # get module
+        custom_modules = {
+        'AircraftAttention': AircraftAttention,
+        'ESPPF': ESPPF,
+        'CompositeDetect': CompositeDetect,
+        }
+
+        if m in custom_modules:
+            m = custom_modules[m]
+        else:
+            m = (
+                getattr(torch.nn, m[3:])
+                if "nn." in m
+                else getattr(__import__("torchvision").ops, m[16:])
+                if "torchvision.ops." in m
+                else globals()[m]
+            )  # get module
         for j, a in enumerate(args):
             if isinstance(a, str):
                 with contextlib.suppress(ValueError):
@@ -1469,12 +1482,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
         elif m in frozenset(
-            {Detect, WorldDetect, YOLOEDetect, Segment, YOLOESegment, Pose, OBB, ImagePoolingAttn, v10Detect}
+            {Detect, WorldDetect, YOLOEDetect, Segment, YOLOESegment, Pose, OBB, ImagePoolingAttn, v10Detect, CompositeDetect}
         ):
-            args.append([ch[x] for x in f])
+            args.append([ch[x] for x in f] if isinstance(f, list) else [ch[f]])
             if m is Segment or m is YOLOESegment:
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
-            if m in {Detect, YOLOEDetect, Segment, YOLOESegment, Pose, OBB}:
+            if m in {Detect, YOLOEDetect, Segment, YOLOESegment, Pose, OBB, CompositeDetect}:
                 m.legacy = legacy
         elif m is RTDETRDecoder:  # special case, channels arg must be passed in index 1
             args.insert(1, [ch[x] for x in f])

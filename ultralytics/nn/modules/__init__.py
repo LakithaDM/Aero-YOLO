@@ -16,7 +16,6 @@ Examples:
     >>> torch.onnx.export(m, x, f)
     >>> os.system(f"onnxslim {f} {f} && open {f}")  # pip install onnxslim
 """
-
 from .block import (
     C1,
     C2,
@@ -30,6 +29,7 @@ from .block import (
     SPP,
     SPPELAN,
     SPPF,
+    AeroSPPF,
     A2C2f,
     AConv,
     ADown,
@@ -103,6 +103,8 @@ from .transformer import (
 )
 
 __all__ = (
+    "ESPPF",
+    "AircraftAttention",
     "Conv",
     "Conv2",
     "LightConv",
@@ -125,6 +127,7 @@ __all__ = (
     "HGStem",
     "SPP",
     "SPPF",
+    "AeroSPPF",
     "C1",
     "C2",
     "C3",

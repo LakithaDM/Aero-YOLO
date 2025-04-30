@@ -1,0 +1,6 @@
+path: D:\AML\Aero-YOLO\ultralytics\dataset  
+train: D:\AML\Aero-YOLO\ultralytics\Output_Dataset\images\train  
+val: D:\AML\Aero-YOLO\ultralytics\Output_Dataset\images\val  
+
+nc: 1  
+names: ["military_aircraft"]
