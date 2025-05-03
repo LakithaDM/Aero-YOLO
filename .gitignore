@@ -176,3 +176,7 @@ pnnx*
 
 # calibration image
 calibration_*.npy
+
+
+
+yolo detect train model=ultralytics/cfg/models/v8/Aero-yolo.yaml data=military_aircrafts.yaml epochs=1 imgsz=640cls

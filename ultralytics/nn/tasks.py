@@ -6,7 +6,7 @@ import re
 import types
 from copy import deepcopy
 from pathlib import Path
-from ultralytics.nn.modules.block import AircraftAttention, ESPPF, AeroSPPF
+from ultralytics.nn.modules.block import AircraftAttention, ESPPF, AeroSPPF, CoordAtt, SE
 from ultralytics.nn.modules.head import CompositeDetect
 import torch
 import torch.nn as nn
@@ -1401,6 +1401,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             SCDown,
             C2fCIB,
             A2C2f,
+            SE,
+            CoordAtt,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1428,6 +1430,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         'AircraftAttention': AircraftAttention,
         'ESPPF': ESPPF,
         'CompositeDetect': CompositeDetect,
+        "CoordAtt": CoordAtt, 
+        "SE": SE, 
         }
 
         if m in custom_modules:

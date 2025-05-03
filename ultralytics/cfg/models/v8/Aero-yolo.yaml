@@ -1,5 +1,4 @@
 # Aero-YOLO: Modified YOLOv8 architecture for aircraft detection
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 nc: 1  # number of classes
 
