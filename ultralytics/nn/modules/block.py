@@ -19,6 +19,8 @@ __all__ = (
     "SPP",
     "SPPF",
     "AeroSPPF",
+    "DFCAttention",
+    "GhostBlockV2",
     "C1",
     "C2",
     "C3",
@@ -2206,7 +2208,6 @@ class ESPPF(nn.Module):
         x = torch.cat((x1,x),1)
         return self.cv2(x)
 
-
 class AeroSPPF(nn.Module):
     def __init__(self, c1, c2, k=5):
         super().__init__()
@@ -2228,6 +2229,62 @@ class AeroSPPF(nn.Module):
         x = self.cv4(x)
         x = torch.cat((x1,x),1)
         return self.cv2(x)
+
+# DFC Attention Module
+class DFCAttention(nn.Module):
+    def __init__(self, channels, kernel_size=7):
+        super().__init__()
+        # Horizontal and Vertical depthwise convolutions
+        self.conv_h = nn.Conv2d(channels, channels, kernel_size=(1, kernel_size), 
+                                padding=(0, kernel_size // 2), groups=channels, bias=False)
+        self.conv_w = nn.Conv2d(channels, channels, kernel_size=(kernel_size, 1), 
+                                padding=(kernel_size // 2, 0), groups=channels, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        attn = self.conv_h(x)
+        attn = self.conv_w(attn)
+        attn = self.sigmoid(attn)
+        return x * attn  # element-wise multiplication
+
+# GhostBlockV2 Module
+class GhostBlockV2(nn.Module):
+    def __init__(self, in_channels, out_channels, ratio=2, kernel_size=3):
+        super().__init__()
+        hidden_channels = out_channels // ratio
+        
+        # 1x1 Pointwise convolution
+        self.primary_conv = nn.Sequential(
+            nn.Conv2d(in_channels, hidden_channels, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(hidden_channels),
+            nn.ReLU(inplace=True)
+        )
+        
+        # Depthwise convolution (cheap operation)
+        self.cheap_op = nn.Sequential(
+            nn.Conv2d(hidden_channels, hidden_channels, kernel_size, 1, kernel_size // 2, 
+                      groups=hidden_channels, bias=False),
+            nn.BatchNorm2d(hidden_channels),
+            nn.ReLU(inplace=True)
+        )
+        
+        # Combine and project
+        self.project = nn.Sequential(
+            nn.Conv2d(hidden_channels * 2, out_channels, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
+        
+        # DFC Attention
+        self.dfc = DFCAttention(out_channels)
+
+    def forward(self, x):
+        x1 = self.primary_conv(x)
+        x2 = self.cheap_op(x1)
+        out = torch.cat((x1, x2), dim=1)
+        out = self.project(out)
+        out = self.dfc(out)
+        return out
     
 class SE(nn.Module):
     def __init__(self,channels, reduction=16):

@@ -6,7 +6,7 @@ import re
 import types
 from copy import deepcopy
 from pathlib import Path
-from ultralytics.nn.modules.block import AircraftAttention, ESPPF, AeroSPPF, CoordAtt, SE
+from ultralytics.nn.modules.block import AircraftAttention, ESPPF, AeroSPPF, CoordAtt, SE, DFCAttention, GhostBlockV2
 from ultralytics.nn.modules.head import CompositeDetect
 import torch
 import torch.nn as nn
@@ -26,6 +26,8 @@ from ultralytics.nn.modules import (
     SPPELAN,
     SPPF,
     AeroSPPF,
+	DFCAttention,
+	GhostBlockV2,
     A2C2f,
     AConv,
     ADown,
@@ -1375,6 +1377,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             SPP,
             SPPF,
             AeroSPPF,
+			DFCAttention,
+			GhostBlockV2,
             C2fPSA,
             C2PSA,
             DWConv,
